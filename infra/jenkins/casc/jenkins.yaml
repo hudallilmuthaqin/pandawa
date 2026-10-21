@@ -1,0 +1,43 @@
+# Jenkins Configuration as Code. Only credentials and jobs are managed here;
+# users and security stay as configured in the Jenkins UI.
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - file:
+              scope: GLOBAL
+              id: pandawa-prod-env
+              description: "Environment file (secrets) for the deployed PB Pandawa stack"
+              fileName: pandawa-prod.env
+              secretBytes: "${base64:${readFile:/run/secrets/pandawa-prod.env}}"
+
+jobs:
+  - script: |
+      multibranchPipelineJob('pandawa') {
+        displayName('PB Pandawa')
+        description('CI on every branch; main is deployed to Docker (compose project "pandawa").')
+        branchSources {
+          branchSource {
+            source {
+              git {
+                id('pandawa-github')
+                remote('https://github.com/hudallilmuthaqin/pandawa.git')
+                traits {
+                  gitBranchDiscovery()
+                }
+              }
+            }
+          }
+        }
+        // Jenkins runs on a laptop, so GitHub webhooks cannot reach it: poll the repo every minute instead.
+        triggers {
+          periodicFolderTrigger {
+            interval('1m')
+          }
+        }
+        orphanedItemStrategy {
+          discardOldItems {
+            numToKeep(5)
+          }
+        }
+      }

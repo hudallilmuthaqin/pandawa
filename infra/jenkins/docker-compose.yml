@@ -1,0 +1,30 @@
+# Local Jenkins for PB Pandawa CI/CD.
+#   docker compose -f infra/jenkins/docker-compose.yml up -d --build
+# Requires the deploy secrets at ~/.config/pandawa/prod.env (see infra/jenkins/README.md).
+name: jenkins
+services:
+  jenkins:
+    build: .
+    image: local/jenkins:2.580.1
+    container_name: jenkins
+    restart: unless-stopped
+    # Group id of /var/run/docker.sock inside the Colima VM, so the jenkins user may use Docker.
+    group_add:
+      - "${DOCKER_GID:-991}"
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    environment:
+      CASC_JENKINS_CONFIG: /var/jenkins_conf/jenkins.yaml
+      PLUGINS_FORCE_UPGRADE: "true"
+      JAVA_OPTS: "-Xmx1g -Duser.timezone=Asia/Jakarta"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./casc:/var/jenkins_conf:ro
+      - ${HOME}/.config/pandawa/prod.env:/run/secrets/pandawa-prod.env:ro
+
+volumes:
+  # Created earlier by `docker run -v jenkins_home:...`; keeps existing users, plugins and build history.
+  jenkins_home:
+    external: true

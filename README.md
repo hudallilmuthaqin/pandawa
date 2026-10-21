@@ -126,6 +126,7 @@ Cakupan integration test (lihat `backend/src/test/java/id/pbpandawa`):
 ## Dokumentasi
 
 - **Arsitektur, skema database, aturan perhitungan & asumsi bisnis:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- **CI/CD (Jenkins → Docker, auto deploy dari branch `main`):** [`infra/jenkins/README.md`](infra/jenkins/README.md)
 - **Dokumentasi API:** [`docs/API.md`](docs/API.md); OpenAPI interaktif di `http://localhost:8080/swagger-ui.html`
   (aktif di dev; di prod set `SWAGGER_ENABLED=true` bila diperlukan).
 

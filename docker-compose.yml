@@ -1,6 +1,7 @@
 # PB Pandawa – production-like stack: PostgreSQL + Spring Boot API + Nginx (frontend)
 #   cp .env.example .env   # then fill in real secrets
 #   docker compose up -d --build
+# CI/CD (Jenkinsfile) builds pandawa-backend/pandawa-frontend:<git-sha> and deploys them with IMAGE_TAG=<git-sha>.
 services:
   db:
     image: postgres:16-alpine
@@ -20,6 +21,7 @@ services:
 
   backend:
     build: ./backend
+    image: pandawa-backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       db:
@@ -41,6 +43,7 @@ services:
 
   frontend:
     build: ./frontend
+    image: pandawa-frontend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       - backend
