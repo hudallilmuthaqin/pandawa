@@ -84,8 +84,10 @@ pipeline {
             steps {
                 sh '''
                     set -eu
+                    # No --pull: Docker Hub is slow/unreliable from this network, so reuse local base images
+                    # (refresh them manually, see infra/jenkins/README.md).
                     for app in backend frontend; do
-                        docker build --pull \
+                        docker build \
                             --label org.opencontainers.image.revision="$GIT_COMMIT" \
                             --label org.opencontainers.image.source="$GIT_URL" \
                             -t "pandawa-$app:$IMAGE_TAG" "$app"

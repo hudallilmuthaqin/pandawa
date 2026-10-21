@@ -56,6 +56,10 @@ docker compose -f infra/jenkins/docker-compose.yml up -d --build
 docker compose -p pandawa ps
 docker compose -p pandawa logs -f backend
 
+# Perbarui base image (pipeline tidak memakai --pull karena Docker Hub lambat dari jaringan ini);
+# jalankan sesekali, misalnya sebulan sekali, lalu push commit apa saja agar image dibuild ulang
+for i in eclipse-temurin:21-jdk eclipse-temurin:21-jre node:22-alpine nginx:1.27-alpine postgres:16-alpine; do docker pull $i; done
+
 # Rollback manual ke versi tertentu (lihat tag: docker image ls pandawa-backend)
 IMAGE_TAG=<sha> docker compose -p pandawa --env-file ~/.config/pandawa/prod.env up -d --no-build db backend frontend
 ```
