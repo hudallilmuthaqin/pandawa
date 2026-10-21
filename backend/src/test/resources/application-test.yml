@@ -1,0 +1,10 @@
+app:
+  jwt:
+    secret: test-secret-0123456789abcdef0123456789abcdef
+    ttl: 3650d
+  seed:
+    enabled: false
+logging:
+  level:
+    id.pbpandawa: INFO
+    org.hibernate.SQL: WARN
