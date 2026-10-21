@@ -124,8 +124,9 @@ pipeline {
                         set -eu
                         compose="docker compose -p $COMPOSE_PROJECT --env-file $ENV_FILE -f docker-compose.yml"
                         # Frontend serves the SPA, and proxies the API through to the backend and database.
-                        $compose exec -T frontend wget -qO- http://localhost/ | grep -q '<div id="root"'
-                        $compose exec -T frontend wget -qO- http://localhost/api/settings/public > /dev/null
+                        # 127.0.0.1, not localhost: busybox wget resolves localhost to ::1 but nginx listens on IPv4 only.
+                        $compose exec -T frontend wget -qO- http://127.0.0.1/ | grep -q '<div id="root"'
+                        $compose exec -T frontend wget -qO- http://127.0.0.1/api/settings/public > /dev/null
                         $compose exec -T frontend wget -qO- http://backend:8080/actuator/health | grep -q '"UP"'
                         echo "Smoke test passed for $IMAGE_TAG"
                     '''

@@ -14,7 +14,8 @@ Setiap push ke GitHub (`hudallilmuthaqin/pandawa`) diproses oleh Jenkins lokal s
 Bila deploy atau smoke test gagal, pipeline otomatis **rollback** ke image yang berjalan sebelumnya.
 Hanya 5 image terbaru per aplikasi yang disimpan.
 
-Hasil deploy: **http://localhost:8081**. Jenkins: **http://localhost:8080** (job *PB Pandawa*).
+Hasil deploy: **http://localhost:8090** (`APP_PORT` di `~/.config/pandawa/prod.env`; port 8081 di laptop ini dipakai McAfee Agent).
+Jenkins: **http://localhost:8080** (job *PB Pandawa*).
 
 ## Cara kerja trigger
 
