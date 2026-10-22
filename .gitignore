@@ -2,3 +2,4 @@
 .DS_Store
 .run/
 .previous-tag
+*.tsbuildinfo
