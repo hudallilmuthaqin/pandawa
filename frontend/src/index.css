@@ -50,3 +50,34 @@ body {
 .animate-fade { animation: fade-in 0.15s ease-out; }
 
 input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.6; }
+
+/* Success dialog: pop in, then draw the ring and the check, and count down to auto-close. */
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.85) translateY(8px); }
+  60% { opacity: 1; transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+@keyframes draw-stroke { to { stroke-dashoffset: 0; } }
+@keyframes check-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+@keyframes countdown { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.animate-pop { animation: pop-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.success-ring {
+  stroke: var(--color-emerald-500, #10b981);
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: draw-stroke 0.5s 0.15s ease-out forwards;
+}
+.success-check {
+  stroke: var(--color-emerald-500, #10b981);
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  transform-origin: center;
+  animation: draw-stroke 0.3s 0.6s ease-out forwards, check-bounce 0.3s 0.9s ease-in-out;
+}
+.success-countdown { transform-origin: left; animation: countdown linear forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop, .success-ring, .success-check { animation: none; stroke-dashoffset: 0; }
+}

@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard, Users, ListOrdered, Radio, History, Wallet, CalendarDays, CalendarRange, CalendarSearch,
-  Settings, UserRound, Menu, LogOut, X,
+  Settings, UserRound, Menu, LogOut, X, KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { useQueue, useSettings } from '../lib/queries';
@@ -67,6 +67,11 @@ export function AppLayout() {
           <p className="text-xs text-navy-100/60">{isAdmin ? 'Admin' : 'Pemain'}</p>
         </div>
       </div>
+      <NavLink to="/account/password" onClick={() => setDrawer(false)}
+        className={({ isActive }) => clsx('flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm hover:bg-white/10 hover:text-white',
+          isActive ? 'bg-white/10 text-white' : 'text-navy-100/80')}>
+        <KeyRound className="size-4" /> Ganti Password
+      </NavLink>
       <button type="button" onClick={() => logout()} className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm text-navy-100/80 hover:bg-white/10 hover:text-white">
         <LogOut className="size-4" /> Keluar
       </button>

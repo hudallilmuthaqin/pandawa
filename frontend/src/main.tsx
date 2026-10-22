@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from './lib/api';
 import { AuthProvider } from './auth/AuthContext';
 import { ToastProvider } from './components/Toast';
+import { SuccessDialogProvider } from './components/SuccessDialog';
 import App from './App';
 import './index.css';
 
@@ -25,9 +26,11 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ToastProvider>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
+          <SuccessDialogProvider>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </SuccessDialogProvider>
         </ToastProvider>
       </BrowserRouter>
     </QueryClientProvider>

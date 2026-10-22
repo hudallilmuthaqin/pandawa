@@ -20,6 +20,7 @@ const DailyReportPage = lazy(() => import('./pages/DailyReportPage'));
 const MonthlyReportPage = lazy(() => import('./pages/MonthlyReportPage'));
 const RangeReportPage = lazy(() => import('./pages/RangeReportPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ChangePasswordPage = lazy(() => import('./pages/ChangePasswordPage'));
 
 function AdminOnly({ children }: { children: ReactNode }) {
   const { isAdmin } = useAuth();
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="live" element={<LivePage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="me" element={<MyProfilePage />} />
+        <Route path="account/password" element={<ChangePasswordPage />} />
         <Route path="players" element={<AdminOnly><PlayersPage /></AdminOnly>} />
         <Route path="players/:id" element={<PlayerDetailPage />} />
         <Route path="expenses" element={<AdminOnly><ExpensesPage /></AdminOnly>} />

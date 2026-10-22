@@ -7,6 +7,7 @@ import { useAuditLogs, usePermissionCatalog, usePlayers, useSettings, useUsers }
 import { api } from '../lib/api';
 import { Badge, Button, Card, CardHeader, ErrorBox, Field, Input, LoadingBlock, PageHeader, Pagination, Segmented, Select, Sheet, Toggle } from '../components/ui';
 import { errorMessage, useToast } from '../components/Toast';
+import { passwordChangedDialog, useSuccessDialog } from '../components/SuccessDialog';
 import { formatDateTime, rupiah } from '../lib/format';
 import type { CourtSplitMethod, Permission, Role, Settings, UserAccount } from '../lib/types';
 
@@ -107,6 +108,8 @@ function PermissionsTab({ settings }: { settings: Settings }) {
 function UserSheet({ open, onClose, account }: { open: boolean; onClose: () => void; account: UserAccount | null }) {
   const qc = useQueryClient();
   const toast = useToast();
+  const { user, logout } = useAuth();
+  const showSuccess = useSuccessDialog();
   const players = usePlayers({ size: 200 });
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -127,22 +130,41 @@ function UserSheet({ open, onClose, account }: { open: boolean; onClose: () => v
     toast(msg);
     onClose();
   };
+  // When editing, the password field is optional: filled in, Simpan also resets the password.
+  const resetsPassword = !!account && password.length > 0;
   const save = useMutation({
-    mutationFn: () => account
-      ? api.put(`/api/users/${account.id}`, { role, enabled, playerId: playerId ? Number(playerId) : null })
-      : api.post('/api/users', { username, password, role, playerId: playerId ? Number(playerId) : null }),
-    onSuccess: () => done(account ? 'Akun diperbarui' : 'Akun dibuat'),
+    mutationFn: async () => {
+      if (!account) {
+        await api.post('/api/users', { username, password, role, playerId: playerId ? Number(playerId) : null });
+        return;
+      }
+      await api.put(`/api/users/${account.id}`, { role, enabled, playerId: playerId ? Number(playerId) : null });
+      if (resetsPassword) await api.post(`/api/users/${account.id}/reset-password`, { newPassword: password });
+    },
+    onSuccess: () => {
+      if (resetsPassword && account!.id === user?.id) {
+        // Resetting revokes all of this user's tokens, including the current session.
+        onClose();
+        showSuccess(passwordChangedDialog(logout));
+        return;
+      }
+      if (resetsPassword) {
+        qc.invalidateQueries({ queryKey: ['users'] });
+        onClose();
+        showSuccess({ title: 'Password berhasil direset', message: `@${account!.username} sekarang masuk dengan password baru.` });
+        return;
+      }
+      done(account ? 'Akun diperbarui' : 'Akun dibuat');
+    },
   });
-  const reset = useMutation({
-    mutationFn: () => api.post(`/api/users/${account!.id}/reset-password`, { newPassword: password }),
-    onSuccess: () => done('Password direset'),
-  });
-  const invalid = !account && (!/^[a-zA-Z0-9._@-]{3,60}$/.test(username) || password.length < 8);
+  const invalid = account
+    ? resetsPassword && password.length < 8
+    : !/^[a-zA-Z0-9._@-]{3,60}$/.test(username) || password.length < 8;
   return (
     <Sheet open={open} onClose={onClose} title={account ? `Akun @${account.username}` : 'Buat Akun'}
       footer={<Button size="lg" block disabled={invalid} loading={save.isPending} onClick={() => save.mutate()}>Simpan</Button>}>
       <div className="space-y-4">
-        <ErrorBox error={save.error ?? reset.error} />
+        <ErrorBox error={save.error} />
         {!account && <>
           <Field label="Username" hint="3-60 karakter: huruf, angka, . _ @ -"><Input autoCapitalize="none" value={username} onChange={(e) => setUsername(e.target.value)} /></Field>
           <Field label="Password awal" hint="Minimal 8 karakter"><Input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
@@ -158,8 +180,13 @@ function UserSheet({ open, onClose, account }: { open: boolean; onClose: () => v
         {account && (
           <div className="space-y-2 rounded-2xl bg-slate-50 p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-slate-700"><KeyRound className="size-4" /> Reset password</p>
-            <Input type="password" autoComplete="new-password" placeholder="Password baru (min. 8)" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <Button variant="secondary" block disabled={password.length < 8} loading={reset.isPending} onClick={() => reset.mutate()}>Reset password</Button>
+            <Field label="Password baru"
+              error={resetsPassword && password.length < 8 ? 'Password minimal 8 karakter' : undefined}
+              hint={account.id === user?.id
+                ? 'Opsional. Diisi = password diganti saat Simpan, lalu Anda perlu masuk lagi.'
+                : 'Opsional. Diisi = password diganti saat Simpan; kosongkan bila tidak ingin mengganti.'}>
+              <Input type="password" autoComplete="new-password" placeholder="Kosongkan bila tidak diganti" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </Field>
           </div>
         )}
       </div>
