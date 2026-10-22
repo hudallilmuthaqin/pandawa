@@ -28,7 +28,9 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-pandawa}
+      # Defaults to the bundled db service; set DB_URL to use another server
+      # (e.g. Postgres on the Docker host: jdbc:postgresql://host.docker.internal:5432/pandawa)
+      DB_URL: ${DB_URL:-jdbc:postgresql://db:5432/${DB_NAME:-pandawa}}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (min. 32 characters)}
