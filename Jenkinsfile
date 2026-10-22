@@ -2,6 +2,29 @@
 //   every branch : test backend + frontend, build Docker images
 //   main only    : deploy to the local Docker engine (compose project "pandawa"), smoke test,
 //                  automatic rollback to the previous images if the deploy fails
+//   notifications  : email + WhatsApp on a main deploy (success or failure) and on failures of other branches
+
+// Sends via infra/jenkins/notify.sh with the secrets in credential "pandawa-notify-env".
+// A missing credential or an unreachable provider never fails the build.
+def notify(String subject, String body) {
+    try {
+        withCredentials([file(credentialsId: 'pandawa-notify-env', variable: 'NOTIFY_ENV')]) {
+            withEnv(["NOTIFY_SUBJECT=${subject}", "NOTIFY_BODY=${body}"]) {
+                sh 'bash infra/jenkins/notify.sh'
+            }
+        }
+    } catch (err) {
+        echo "Notification not sent: ${err}"
+    }
+}
+
+def buildSummary() {
+    def commit = sh(script: 'git log -1 --pretty="%s (%an)"', returnStdout: true).trim()
+    return "Branch: ${env.BRANCH_NAME}\nVersi: ${env.IMAGE_TAG}\nCommit: ${commit}\n" +
+           "Durasi: ${currentBuild.durationString.replace(' and counting', '')}\n" +
+           "Log: ${env.BUILD_URL ?: 'http://localhost:8080/job/pandawa/'}console"
+}
+
 pipeline {
     agent any
 
@@ -148,19 +171,44 @@ pipeline {
     post {
         failure {
             script {
+                // Only Deploy writes .previous-tag, so without it the failure happened before anything changed.
+                def outcome = 'Gagal sebelum deploy (tes/build). Versi yang berjalan tidak berubah.'
                 if (env.BRANCH_NAME == 'main' && fileExists('.previous-tag')) {
                     def previous = readFile('.previous-tag').trim()
                     if (previous && previous != env.IMAGE_TAG) {
                         echo "Deploy of ${env.IMAGE_TAG} failed, rolling back to ${previous}"
-                        withCredentials([file(credentialsId: 'pandawa-prod-env', variable: 'ENV_FILE')]) {
-                            withEnv(["IMAGE_TAG=${previous}"]) {
-                                sh '''
-                                    docker compose -p "$COMPOSE_PROJECT" --env-file "$ENV_FILE" -f docker-compose.yml \
-                                        up -d --no-build --wait --wait-timeout 300 db backend frontend
-                                '''
+                        try {
+                            withCredentials([file(credentialsId: 'pandawa-prod-env', variable: 'ENV_FILE')]) {
+                                withEnv(["IMAGE_TAG=${previous}"]) {
+                                    sh '''
+                                        docker compose -p "$COMPOSE_PROJECT" --env-file "$ENV_FILE" -f docker-compose.yml \
+                                            up -d --no-build --wait --wait-timeout 300 db backend frontend
+                                    '''
+                                }
                             }
+                            outcome = "Deploy gagal, otomatis dikembalikan ke versi ${previous}. Aplikasi tetap berjalan."
+                        } catch (err) {
+                            outcome = "ROLLBACK KE ${previous} JUGA GAGAL: aplikasi kemungkinan mati, segera cek!"
+                            throw err
+                        } finally {
+                            notify("❌ PB Pandawa: deploy ${env.IMAGE_TAG} gagal", "${outcome}\n\n${buildSummary()}")
                         }
+                        return
                     }
+                }
+                if (env.BRANCH_NAME == 'main') {
+                    notify("❌ PB Pandawa: build ${env.IMAGE_TAG} gagal", "${outcome}\n\n${buildSummary()}")
+                } else {
+                    notify("❌ PB Pandawa: tes gagal di branch ${env.BRANCH_NAME}",
+                           "Branch ini tidak di-deploy; perbaiki sebelum di-merge ke main.\n\n${buildSummary()}")
+                }
+            }
+        }
+        success {
+            script {
+                if (env.BRANCH_NAME == 'main') {
+                    notify("✅ PB Pandawa: versi ${env.IMAGE_TAG} berhasil di-deploy",
+                           "Tes lulus, aplikasi sudah berjalan dan smoke test OK.\n\n${buildSummary()}")
                 }
             }
         }

@@ -1,6 +1,7 @@
 # Local Jenkins for PB Pandawa CI/CD.
 #   docker compose -f infra/jenkins/docker-compose.yml up -d --build
-# Requires the deploy secrets at ~/.config/pandawa/prod.env (see infra/jenkins/README.md).
+# Requires the deploy secrets at ~/.config/pandawa/prod.env and notify settings at ~/.config/pandawa/notify.env
+# (see infra/jenkins/README.md).
 name: jenkins
 services:
   jenkins:
@@ -23,6 +24,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./casc:/var/jenkins_conf:ro
       - ${HOME}/.config/pandawa/prod.env:/run/secrets/pandawa-prod.env:ro
+      # Must exist before Jenkins starts (copy notify.env.example), otherwise Docker mounts an empty directory
+      - ${HOME}/.config/pandawa/notify.env:/run/secrets/pandawa-notify.env:ro
 
 volumes:
   # Created earlier by `docker run -v jenkins_home:...`; keeps existing users, plugins and build history.

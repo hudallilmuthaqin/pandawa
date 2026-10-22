@@ -10,6 +10,12 @@ credentials:
               description: "Environment file (secrets) for the deployed PB Pandawa stack"
               fileName: pandawa-prod.env
               secretBytes: "${base64:${readFile:/run/secrets/pandawa-prod.env}}"
+          - file:
+              scope: GLOBAL
+              id: pandawa-notify-env
+              description: "Email (SMTP) and WhatsApp (Fonnte) settings for pipeline notifications"
+              fileName: pandawa-notify.env
+              secretBytes: "${base64:${readFile:/run/secrets/pandawa-notify.env}}"
 
 jobs:
   - script: |
