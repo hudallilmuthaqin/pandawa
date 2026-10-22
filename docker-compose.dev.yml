@@ -1,6 +1,5 @@
-# Development: PostgreSQL + Kafka in Docker; run backend (./mvnw spring-boot:run) and frontend (npm run dev) on the host.
+# Development: PostgreSQL in Docker; run backend (./mvnw spring-boot:run) and frontend (npm run dev) on the host.
 #   docker compose -f docker-compose.dev.yml up -d
-# Kafka is reachable from the host at localhost:9092.
 services:
   db:
     image: postgres:16-alpine
@@ -13,26 +12,5 @@ services:
     volumes:
       - pgdata-dev:/var/lib/postgresql/data
 
-  # Single-node Kafka in KRaft mode (no ZooKeeper)
-  kafka:
-    image: apache/kafka:4.1.0
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-    ports:
-      - "9092:9092"
-    volumes:
-      - kafka-dev:/var/lib/kafka/data
 volumes:
   pgdata-dev:
-  kafka-dev:
