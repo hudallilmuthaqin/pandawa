@@ -17,7 +17,7 @@ Format error:
 
 | Method | Path | Akses | Keterangan |
 |---|---|---|---|
-| POST | `/auth/login` | publik | `{username, password}` → `{token, expiresAt, user}`. 401 bila salah, 429 setelah 5 kali gagal. |
+| POST | `/auth/login` | publik | `{username, password}` → `{token, expiresAt, user}`. 401 bila salah, 429 setelah 5 kali gagal (kunci 5 menit). Login sukses memasang cookie HttpOnly `pandawa_device`; percobaan dengan cookie itu dihitung per perangkat, sehingga orang lain yang salah password tidak bisa mengunci pemilik akun. |
 | POST | `/auth/register` | publik | Pendaftaran mandiri pemain bila diizinkan: `{fullName, nickname, phone?, username, password}`. |
 | GET | `/auth/me` | login | Profil akun, role, `playerId`, daftar permission. |
 | POST | `/auth/logout` | login | Mencabut semua token user (204). |

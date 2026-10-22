@@ -59,18 +59,24 @@ public class AuthService {
         this.dummyHash = passwordEncoder.encode("dummy-password-for-timing");
     }
 
+    /**
+     * @param deviceId id from a valid device cookie for this username, or null. Trusted devices are throttled
+     *                 on their own, so failed attempts by others cannot lock the owner out.
+     */
     @Transactional
-    public LoginResponse login(LoginRequest req) {
+    public LoginResponse login(LoginRequest req, String deviceId) {
         String username = req.username().trim();
-        if (loginAttempts.isLocked(username)) {
-            log.warn("Login blocked (too many attempts): username='{}'", username);
+        String bucket = deviceId != null
+                ? LoginAttemptService.deviceBucket(deviceId) : LoginAttemptService.usernameBucket(username);
+        if (loginAttempts.isLocked(bucket)) {
+            log.warn("Login blocked (too many attempts): username='{}' trustedDevice={}", username, deviceId != null);
             throw new BusinessException(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS",
                     "Terlalu banyak percobaan login. Coba lagi dalam 5 menit.");
         }
         User user = userRepository.findByUsernameIgnoreCase(username).orElse(null);
         boolean ok = passwordEncoder.matches(req.password(), user != null ? user.getPasswordHash() : dummyHash);
         if (user == null || !ok || !user.isEnabled()) {
-            loginAttempts.onFailure(username);
+            loginAttempts.onFailure(bucket);
             // Never log the password itself: only hints that help diagnose typing / autofill problems.
             String pw = req.password();
             log.warn("Login failed: username='{}' reason={} passwordLength={} hasWhitespace={} hasUppercase={}",
@@ -78,7 +84,7 @@ public class AuthService {
                     pw.length(), pw.chars().anyMatch(Character::isWhitespace), pw.chars().anyMatch(Character::isUpperCase));
             throw new BusinessException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Username atau password salah");
         }
-        loginAttempts.onSuccess(username);
+        loginAttempts.onSuccess(bucket);
         user.setLastLoginAt(Instant.now(clock));
         var token = jwtService.issue(user);
         return new LoginResponse(token.token(), token.expiresAt(), me(user));
